@@ -1,0 +1,22 @@
+claude-mem-local
+Copyright 2026 claude-mem-local contributors
+
+Licensed under the Apache License, Version 2.0 (see LICENSE).
+
+This project is an independent, from-scratch reimplementation inspired by
+Claude-Mem (https://github.com/thedotmack/claude-mem), Copyright 2026 Alex
+Newman, licensed under the Apache License, Version 2.0. The architecture
+(lifecycle hooks -> observer compression -> SQLite/FTS search -> context
+injection, and the search/timeline/get_observations progressive-disclosure
+pattern) follows ideas from that project. No source code from Claude-Mem's
+commercial or PolyForm-licensed components is included.
+
+The knowledge-graph memory layer borrows ideas (confidence tags, entity
+de-duplication guards, key nodes, communities, path/explain, lessons from
+past answers) from Graphify (https://github.com/Graphify-Labs/graphify),
+Copyright 2026 Safi Shamsi and the Graphify contributors, licensed under the
+Apache License, Version 2.0. It is written from scratch; no Graphify code is
+included.
+
+"Claude" is a trademark of Anthropic, PBC. This project is not affiliated
+with or endorsed by Anthropic or by the Claude-Mem project.

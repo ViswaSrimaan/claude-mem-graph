@@ -1,0 +1,914 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>claude-mem-local</title>
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Ccircle cx='16' cy='16' r='14' fill='%23d97757'/%3E%3Cpath d='M10 20c2-6 10-6 12 0' stroke='white' stroke-width='3' fill='none' stroke-linecap='round'/%3E%3C/svg%3E">
+<style>
+:root {
+  --bg: #f7f6f3; --panel: #ffffff; --panel-2: #f1efea; --text: #1f1e1c; --muted: #6b6862;
+  --border: #e3e0d8; --accent: #c4613f; --accent-soft: #f6e3da; --ok: #2f7d4f; --warn: #a15c00; --danger: #b3261e;
+  --mono: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  --radius: 10px;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #1a1918; --panel: #232220; --panel-2: #2c2a27; --text: #ece9e3; --muted: #a29e96;
+    --border: #3a3733; --accent: #e08a68; --accent-soft: #3d2a22; --ok: #6cc28f; --warn: #e2a23b; --danger: #f2827a;
+  }
+}
+:root[data-theme="dark"] {
+  --bg: #1a1918; --panel: #232220; --panel-2: #2c2a27; --text: #ece9e3; --muted: #a29e96;
+  --border: #3a3733; --accent: #e08a68; --accent-soft: #3d2a22; --ok: #6cc28f; --warn: #e2a23b; --danger: #f2827a;
+}
+* { box-sizing: border-box; }
+html, body { margin: 0; }
+body { background: var(--bg); color: var(--text); font: 14px/1.5 system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; }
+a { color: var(--accent); }
+button, input, select, textarea { font: inherit; color: inherit; }
+button { cursor: pointer; border: 1px solid var(--border); background: var(--panel); border-radius: 8px; padding: 6px 12px; }
+button:hover { border-color: var(--accent); }
+button.primary { background: var(--accent); border-color: var(--accent); color: #fff; }
+button.danger { color: var(--danger); }
+button.link { border: 0; background: none; padding: 2px 6px; color: var(--muted); }
+button.link:hover { color: var(--accent); }
+input, select, textarea { background: var(--panel); border: 1px solid var(--border); border-radius: 8px; padding: 6px 10px; }
+input:focus, select:focus, textarea:focus, button:focus-visible { outline: 2px solid var(--accent); outline-offset: 1px; }
+header { position: sticky; top: 0; z-index: 5; background: var(--bg); border-bottom: 1px solid var(--border); }
+.bar { max-width: 1100px; margin: 0 auto; padding: 12px 16px; display: flex; gap: 10px; align-items: center; flex-wrap: wrap; }
+.brand { font-weight: 650; display: flex; align-items: center; gap: 8px; margin-right: auto; }
+.dot { width: 9px; height: 9px; border-radius: 50%; background: var(--muted); display: inline-block; }
+.dot.live { background: var(--ok); box-shadow: 0 0 0 3px color-mix(in srgb, var(--ok) 25%, transparent); }
+#q { min-width: 0; flex: 1 1 220px; max-width: 360px; }
+nav { max-width: 1100px; margin: 0 auto; padding: 0 16px; display: flex; gap: 4px; overflow-x: auto; }
+nav button { border: 0; border-bottom: 2px solid transparent; border-radius: 0; background: none; padding: 8px 12px; color: var(--muted); white-space: nowrap; }
+nav button.active { color: var(--text); border-bottom-color: var(--accent); }
+main { max-width: 1100px; margin: 0 auto; padding: 16px; }
+.stats { display: grid; grid-template-columns: repeat(auto-fit, minmax(130px, 1fr)); gap: 10px; margin-bottom: 16px; }
+.stat { background: var(--panel); border: 1px solid var(--border); border-radius: var(--radius); padding: 10px 12px; }
+.stat b { display: block; font-size: 20px; font-variant-numeric: tabular-nums; }
+.stat span { color: var(--muted); font-size: 12px; }
+.filters { display: flex; gap: 6px; flex-wrap: wrap; margin-bottom: 12px; }
+.chip { border-radius: 999px; padding: 3px 10px; font-size: 12.5px; }
+.chip.on { background: var(--accent-soft); border-color: var(--accent); }
+.card { background: var(--panel); border: 1px solid var(--border); border-radius: var(--radius); padding: 12px 14px; margin-bottom: 10px; }
+.card.new { animation: flash 1.6s ease-out; }
+@keyframes flash { from { box-shadow: 0 0 0 3px var(--accent); } to { box-shadow: none; } }
+.card h3 { margin: 0; font-size: 15px; display: flex; gap: 8px; align-items: baseline; }
+.card h3 .icon { color: var(--accent); }
+.meta { color: var(--muted); font-size: 12px; display: flex; gap: 10px; flex-wrap: wrap; align-items: center; margin-top: 2px; }
+.badge { background: var(--panel-2); border-radius: 6px; padding: 0 6px; font-size: 11.5px; }
+.sub { color: var(--muted); margin: 4px 0 0; }
+.body { margin-top: 8px; }
+.body p { margin: 6px 0; white-space: pre-wrap; }
+.body ul { margin: 6px 0; padding-left: 20px; }
+.files { font-family: var(--mono); font-size: 12px; color: var(--muted); word-break: break-all; }
+.actions { margin-left: auto; display: flex; gap: 2px; }
+.row { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
+.empty { text-align: center; color: var(--muted); padding: 48px 16px; }
+pre { background: var(--panel-2); border-radius: 8px; padding: 12px; overflow: auto; font: 12.5px/1.45 var(--mono); white-space: pre-wrap; word-break: break-word; max-height: 70vh; }
+.grid2 { display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 12px 20px; }
+label.field { display: flex; flex-direction: column; gap: 4px; font-size: 13px; }
+label.field small { color: var(--muted); }
+label.check { display: flex; gap: 8px; align-items: center; }
+fieldset { border: 1px solid var(--border); border-radius: var(--radius); padding: 12px 14px 16px; margin: 0 0 14px; background: var(--panel); }
+legend { padding: 0 6px; font-weight: 600; }
+dialog { border: 1px solid var(--border); border-radius: 12px; background: var(--panel); color: var(--text); width: min(560px, calc(100vw - 32px)); padding: 16px; }
+dialog::backdrop { background: rgb(0 0 0 / .4); }
+dialog form { display: flex; flex-direction: column; gap: 10px; }
+textarea { min-height: 120px; resize: vertical; }
+.timeline-item { border-left: 2px solid var(--border); padding: 4px 0 10px 12px; margin-left: 4px; position: relative; }
+.timeline-item::before { content: ""; position: absolute; left: -6px; top: 10px; width: 10px; height: 10px; border-radius: 50%; background: var(--border); }
+.timeline-item.obs::before { background: var(--accent); }
+.timeline-item.prompt::before { background: var(--ok); }
+.toast { position: fixed; bottom: 16px; left: 50%; transform: translateX(-50%); background: var(--text); color: var(--bg); padding: 8px 14px; border-radius: 8px; opacity: 0; transition: opacity .2s; pointer-events: none; }
+.toast.show { opacity: 1; }
+.more { display: block; margin: 12px auto; }
+@media (max-width: 600px) { .bar { gap: 8px; } #q { max-width: none; flex-basis: 100%; order: 5; } }
+.tabcount { background: var(--accent); color: #fff; border-radius: 999px; font-size: 11px; padding: 0 6px; margin-left: 4px; }
+.ent { border-radius: 999px; padding: 0 8px; font-size: 12px; background: var(--panel-2); border: 1px solid var(--border); }
+.ent:hover { border-color: var(--accent); }
+.tools { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; margin-bottom: 10px; }
+.tools input[type=search] { flex: 1 1 160px; max-width: 240px; min-width: 0; }
+.tools .actions { align-items: center; gap: 6px; flex-wrap: wrap; }
+.graph-wrap { display: grid; grid-template-columns: minmax(0, 1fr) 360px; gap: 12px; }
+@media (max-width: 900px) { .graph-wrap { grid-template-columns: 1fr; } }
+.canvas-box { position: relative; background: var(--panel); border: 1px solid var(--border); border-radius: var(--radius); height: min(72vh, 680px); min-height: 320px; overflow: hidden; touch-action: none; }
+.canvas-box canvas { width: 100%; height: 100%; display: block; cursor: grab; }
+.canvas-box canvas.dragging { cursor: grabbing; }
+.canvas-box .hint { position: absolute; left: 10px; bottom: 8px; right: 10px; font-size: 12px; color: var(--muted); pointer-events: none; }
+.canvas-box .zoom { position: absolute; right: 8px; top: 8px; display: flex; flex-direction: column; gap: 4px; }
+.canvas-box .zoom button { width: 30px; height: 30px; padding: 0; }
+.side { background: var(--panel); border: 1px solid var(--border); border-radius: var(--radius); padding: 12px 14px; max-height: min(72vh, 680px); overflow: auto; min-width: 0; }
+@media (max-width: 900px) { .side { max-height: none; } }
+.side h3 { margin: 0 0 4px; font-size: 16px; }
+.side h4 { margin: 14px 0 4px; font-size: 12px; text-transform: uppercase; letter-spacing: .05em; color: var(--muted); }
+.side ul { list-style: none; margin: 0; padding: 0; }
+.side li { padding: 5px 0; border-top: 1px solid var(--border); font-size: 13px; overflow-wrap: anywhere; }
+.side li:first-child { border-top: 0; }
+.fact .what b { font-weight: 600; }
+.fact.closed .what { color: var(--muted); text-decoration: line-through; }
+.fact .extra { color: var(--muted); font-size: 12px; }
+.conf { font-size: 10.5px; border-radius: 5px; padding: 0 5px; background: var(--panel-2); color: var(--muted); letter-spacing: .03em; }
+.conf.STATED { color: var(--ok); }
+.conf.AMBIGUOUS { color: var(--warn); }
+.swatch { width: 10px; height: 10px; border-radius: 50%; display: inline-block; flex: none; }
+.namebtn { border: 0; background: none; padding: 0; color: var(--text); font-weight: 600; }
+.namebtn:hover { color: var(--accent); text-decoration: underline; }
+.review .q { font-weight: 600; margin: 0 0 6px; }
+.inline-form { display: grid; gap: 8px; margin: 8px 0; padding: 10px; background: var(--panel-2); border-radius: 8px; }
+.lesson { font-size: 11px; border-radius: 5px; padding: 0 5px; background: var(--accent-soft); color: var(--accent); }
+</style>
+</head>
+<body>
+<header>
+  <div class="bar">
+    <div class="brand"><span class="dot" id="live" title="Live updates"></span> claude-mem-local <span class="badge" id="ver"></span></div>
+    <select id="project" aria-label="Project"><option value="*">All projects</option></select>
+    <input id="q" type="search" placeholder="Search memory…" aria-label="Search">
+    <button id="remember" class="primary">+ Remember</button>
+    <button id="theme" class="link" title="Toggle theme" aria-label="Toggle theme">◐</button>
+  </div>
+  <nav id="tabs">
+    <button data-tab="memory" class="active">Memory</button>
+    <button data-tab="graph">Graph</button>
+    <button data-tab="review">Review<span id="reviewCount"></span></button>
+    <button data-tab="sessions">Sessions</button>
+    <button data-tab="summaries">Summaries</button>
+    <button data-tab="prompts">Prompts</button>
+    <button data-tab="context">Context preview</button>
+    <button data-tab="settings">Settings</button>
+  </nav>
+</header>
+<main id="main"></main>
+
+<dialog id="dlg">
+  <form method="dialog" id="dlgForm">
+    <h3 id="dlgTitle" style="margin:0">Remember something</h3>
+    <label class="field">Title <input name="title" placeholder="Optional"></label>
+    <label class="field">Type <select name="type" id="dlgType"></select></label>
+    <label class="field">Memory <textarea name="text" required placeholder="A decision, preference, gotcha or handoff note…"></textarea></label>
+    <label class="field">Project <input name="project" id="dlgProject"></label>
+    <div class="row" style="justify-content:flex-end">
+      <button value="cancel" formnovalidate>Cancel</button>
+      <button value="ok" class="primary">Save</button>
+    </div>
+  </form>
+</dialog>
+<div class="toast" id="toast" role="status"></div>
+
+<script>
+'use strict';
+const $ = (s, el = document) => el.querySelector(s);
+const esc = (v) => String(v ?? '').replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+const state = { tab: 'memory', project: '*', q: '', type: '', offset: 0, mode: null, settings: null, editing: null };
+const main = $('#main');
+
+try { const t = localStorage.getItem('cmem-theme'); if (t) document.documentElement.dataset.theme = t; } catch {}
+try { const p = localStorage.getItem('cmem-project'); if (p) state.project = p; } catch {}
+// Links such as /?tab=graph&project=acme&entity=12 open straight on a view.
+{
+  const u = new URLSearchParams(location.search);
+  if (u.get('project')) state.project = u.get('project');
+  if (u.get('tab')) state.tab = u.get('tab');
+  if (Number(u.get('entity'))) { state.tab = 'graph'; state.pendingEntity = Number(u.get('entity')); }
+}
+
+async function api(path, opts = {}) {
+  const res = await fetch(path, { ...opts, headers: { 'content-type': 'application/json', 'x-cmem-local': '1', ...(opts.headers || {}) } });
+  const body = await res.json().catch(() => null);
+  if (!res.ok) throw new Error(body?.error || res.statusText);
+  return body;
+}
+function toast(msg) { const t = $('#toast'); t.textContent = msg; t.classList.add('show'); clearTimeout(toast.t); toast.t = setTimeout(() => t.classList.remove('show'), 2200); }
+function when(ms) { const d = new Date(ms); return d.toLocaleString(undefined, { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' }); }
+function ago(ms) {
+  const s = (Date.now() - ms) / 1000;
+  if (s < 60) return 'just now'; if (s < 3600) return `${Math.floor(s / 60)}m ago`; if (s < 86400) return `${Math.floor(s / 3600)}h ago`;
+  return `${Math.floor(s / 86400)}d ago`;
+}
+const icon = (type) => state.mode?.types.find((t) => t.id === type)?.icon || '•';
+const qs = (o) => new URLSearchParams(Object.entries(o).filter(([, v]) => v !== '' && v !== undefined && v !== null)).toString();
+const projParam = () => (state.project === '*' ? '' : state.project);
+
+function obsCard(o, isNew) {
+  const list = (arr) => (arr?.length ? `<ul>${arr.map((x) => `<li>${esc(x)}</li>`).join('')}</ul>` : '');
+  const files = [...(o.files_modified || []).map((f) => `✎ ${f}`), ...(o.files_read || []).map((f) => `◦ ${f}`)];
+  return `<article class="card${isNew ? ' new' : ''}" data-id="${o.id}">
+    <h3><span class="icon" aria-hidden="true">${esc(icon(o.type))}</span><span>${esc(o.title)}</span>
+      <span class="actions"><button class="link" data-act="edit" title="Edit">Edit</button><button class="link" data-act="del" title="Delete">Delete</button></span></h3>
+    <div class="meta"><span class="badge">#${o.id}</span><span class="badge">${esc(o.type)}</span><span>${esc(o.project)}</span><span title="${esc(new Date(o.created_at).toISOString())}">${when(o.created_at)}</span>${o.source ? `<span>via ${esc(o.source)}</span>` : ''}</div>
+    ${o.subtitle ? `<p class="sub">${esc(o.subtitle)}</p>` : ''}
+    <div class="body">${o.narrative ? `<p>${esc(o.narrative)}</p>` : ''}${list(o.facts)}
+    ${o.concepts?.length ? `<div class="meta">${o.concepts.map((c) => `<span class="badge">${esc(c)}</span>`).join('')}</div>` : ''}
+    ${files.length ? `<div class="files">${files.slice(0, 20).map(esc).join('<br>')}</div>` : ''}</div>
+    <div class="meta" style="margin-top:8px">${(o.entities || []).map((e) => `<button class="ent" data-entity="${e.id}" data-project="${esc(o.project)}" title="${esc(e.kind)} – open in graph">${esc(e.name)}</button>`).join('')}
+      <span class="actions"><button class="link" data-feedback="useful" title="This memory helped">Useful</button><button class="link" data-feedback="dead_end" title="This memory led nowhere">Dead end</button></span></div>
+  </article>`;
+}
+
+function summaryCard(s) {
+  const f = [['Request', s.request], ['Investigated', s.investigated], ['Learned', s.learned], ['Completed', s.completed], ['Next steps', s.next_steps], ['Notes', s.notes]].filter(([, v]) => v);
+  return `<article class="card" data-sid="${s.id}"><h3><span class="icon">❖</span><span>${esc((s.request || 'Session summary').slice(0, 140))}</span>
+    <span class="actions"><button class="link" data-act="delsum">Delete</button></span></h3>
+    <div class="meta"><span class="badge">S${s.id}</span><span>${esc(s.project)}</span><span>${when(s.created_at)}</span><button class="link" data-session="${esc(s.session_id)}">Open session →</button></div>
+    <div class="body">${f.map(([k, v]) => `<p><b>${k}:</b> ${esc(v)}</p>`).join('')}</div></article>`;
+}
+
+async function loadStats() {
+  const s = await api(`/api/stats?${qs({ project: projParam() })}`);
+  return `<div class="stats">
+    <div class="stat"><b>${s.observations}</b><span>observations</span></div>
+    <div class="stat"><b>${s.summaries}</b><span>summaries</span></div>
+    <div class="stat"><b>${s.sessions}</b><span>sessions</span></div>
+    <div class="stat"><b>${s.prompts}</b><span>prompts</span></div>
+    <div class="stat"><b>${s.pending_events}</b><span>pending events${s.pending_events ? ' · <a href="#" id="processNow">process now</a>' : ''}</span></div>
+  </div>`;
+}
+
+async function renderMemory(append) {
+  const limit = 40;
+  if (!append) state.offset = 0;
+  const rows = await api(`/api/observations?${qs({ project: projParam(), q: state.q, type: state.type, limit, offset: state.offset })}`);
+  const types = state.mode?.types || [];
+  const filters = `<div class="filters"><button class="chip${state.type === '' ? ' on' : ''}" data-type="">All types</button>${types.map((t) => `<button class="chip${state.type === t.id ? ' on' : ''}" data-type="${esc(t.id)}">${esc(t.icon)} ${esc(t.label)}</button>`).join('')}</div>`;
+  const cards = rows.map((o) => obsCard(o)).join('');
+  if (append) {
+    $('#feed').insertAdjacentHTML('beforeend', cards);
+  } else {
+    const empty = state.q ? `No memory matches “${esc(state.q)}”.` : 'No memory yet. Work in Claude Code or Cowork and observations will appear here as you go.';
+    main.innerHTML = `${await loadStats()}${filters}<div id="feed">${cards || `<div class="empty">${empty}</div>`}</div>`;
+  }
+  $('#moreBtn')?.remove();
+  if (rows.length === limit && !state.q) main.insertAdjacentHTML('beforeend', '<button class="more" id="moreBtn">Load more</button>');
+}
+
+async function renderSessions() {
+  const rows = await api(`/api/sessions?${qs({ project: projParam(), limit: 100 })}`);
+  main.innerHTML = rows.length ? rows.map((s) => `<article class="card"><h3><span class="icon">▸</span><span>${esc((s.first_prompt || '(no prompt recorded)').slice(0, 140))}</span>
+    <span class="actions"><button class="link" data-session="${esc(s.session_id)}">Open</button><button class="link" data-act="delsession" data-sid="${esc(s.session_id)}">Delete</button></span></h3>
+    <div class="meta"><span>${esc(s.project)}</span><span>${when(s.started_at)}</span><span>${s.prompt_count} prompts</span><span>${s.observation_count} observations</span><span class="badge">${esc(s.status)}</span><span>${esc(s.platform || '')}</span></div></article>`).join('')
+    : '<div class="empty">No sessions yet.</div>';
+}
+
+async function renderSession(sid) {
+  const d = await api(`/api/sessions/${encodeURIComponent(sid)}`);
+  const items = [
+    ...d.prompts.map((p) => ({ at: p.created_at, cls: 'prompt', html: `<div class="meta"><b>Prompt ${p.prompt_number}</b><span>${when(p.created_at)}</span></div><p style="white-space:pre-wrap;margin:4px 0">${esc(p.text)}</p>` })),
+    ...d.observations.map((o) => ({ at: o.created_at, cls: 'obs', html: obsCard(o) })),
+    ...d.summaries.map((s) => ({ at: s.created_at, cls: 'sum', html: summaryCard(s) })),
+  ].sort((a, b) => a.at - b.at);
+  main.innerHTML = `<div class="row" style="margin-bottom:12px"><button class="link" data-tab-go="sessions">← Sessions</button><b>${esc(d.session.project)}</b><span class="meta">${when(d.session.started_at)} · ${esc(d.session.session_id)}</span></div>
+    ${items.map((i) => `<div class="timeline-item ${i.cls}">${i.html}</div>`).join('') || '<div class="empty">Nothing recorded in this session.</div>'}
+    <details style="margin-top:16px"><summary>Raw tool events (${d.events.length})</summary>${d.events.map((e) => `<div class="card"><div class="meta"><b>${esc(e.tool_name)}</b><span>${when(e.created_at)}</span><span class="badge">${esc(e.status)}</span>${e.failed ? '<span class="badge">failed</span>' : ''}</div><pre>${esc(e.tool_input)}</pre><pre>${esc(e.tool_output)}</pre></div>`).join('')}</details>`;
+}
+
+async function renderSummaries() {
+  const rows = await api(`/api/summaries?${qs({ project: projParam(), q: state.q, limit: 100 })}`);
+  main.innerHTML = rows.map(summaryCard).join('') || '<div class="empty">No summaries yet.</div>';
+}
+
+async function renderPrompts() {
+  const rows = await api(`/api/prompts?${qs({ project: projParam(), q: state.q, limit: 100 })}`);
+  main.innerHTML = rows.map((p) => `<article class="card"><div class="meta"><span class="badge">P${p.id}</span><span>${esc(p.project)}</span><span>${when(p.created_at)}</span><button class="link" data-session="${esc(p.session_id)}">Open session →</button></div><p style="white-space:pre-wrap;margin:6px 0 0">${esc(p.text)}</p></article>`).join('') || '<div class="empty">No prompts yet.</div>';
+}
+
+async function renderContext() {
+  const proj = projParam();
+  const { text } = await api(`/api/context?${qs({ project: proj })}`);
+  main.innerHTML = `<p class="meta">This is what Claude sees at the start of a new session${proj ? ` in <b>${esc(proj)}</b>` : ' (all projects)'}. About ${Math.round((text || '').length / 4).toLocaleString()} tokens.</p><pre>${esc(text || '(empty - no memory yet)')}</pre>`;
+}
+
+function field(label, key, value, type = 'text', hint = '', opts) {
+  const id = `f_${key.replace(/\./g, '_')}`;
+  if (type === 'checkbox') return `<label class="check"><input type="checkbox" id="${id}" data-key="${key}" ${value ? 'checked' : ''}> ${label}${hint ? ` <small class="meta">${hint}</small>` : ''}</label>`;
+  if (type === 'select') return `<label class="field">${label}<select id="${id}" data-key="${key}">${opts.map((o) => `<option value="${esc(o[0])}" ${o[0] === value ? 'selected' : ''}>${esc(o[1])}</option>`).join('')}</select>${hint ? `<small>${hint}</small>` : ''}</label>`;
+  return `<label class="field">${label}<input id="${id}" data-key="${key}" data-type="${type}" type="${type === 'list' ? 'text' : type}" value="${esc(Array.isArray(value) ? value.join(', ') : value)}">${hint ? `<small>${hint}</small>` : ''}</label>`;
+}
+
+async function renderSettings() {
+  const [{ effective: s, file }, modes, health] = await Promise.all([api('/api/settings'), api('/api/modes'), api('/api/health')]);
+  state.settings = s;
+  main.innerHTML = `<form id="settingsForm">
+  <fieldset><legend>Observer (how memories are written)</legend><div class="grid2">
+    ${field('Provider', 'observer.provider', s.observer.provider, 'select', `Currently using: <b>${esc(health.provider)}</b>. Nothing here needs a claude-mem account.`, [
+      ['auto', 'Auto - Claude Code CLI if available, else offline'], ['claude-cli', 'Claude Code CLI (your existing Claude login)'],
+      ['openai', 'Ollama / LM Studio / OpenAI-compatible (free, local)'], ['anthropic', 'Anthropic API key (pay-as-you-go)'], ['heuristic', 'Offline rules only (no model)']])}
+    ${field('Claude CLI model', 'observer.claudeCliModel', s.observer.claudeCliModel, 'text', 'haiku is fast and light on usage')}
+    ${field('OpenAI-compatible base URL', 'observer.openaiBaseUrl', s.observer.openaiBaseUrl, 'text', 'Ollama default: http://localhost:11434/v1')}
+    ${field('OpenAI-compatible model', 'observer.openaiModel', s.observer.openaiModel)}
+    ${field('Anthropic model', 'observer.anthropicModel', s.observer.anthropicModel, 'text', 'Key is read from ANTHROPIC_API_KEY')}
+    ${field('Timeout (ms)', 'observer.timeoutMs', s.observer.timeoutMs, 'number')}
+    ${field('Summarize chat-only turns offline', 'observer.skipLlmForChatOnlyTurns', s.observer.skipLlmForChatOnlyTurns, 'checkbox')}
+  </div></fieldset>
+  <fieldset><legend>Context injection</legend><div class="grid2">
+    ${field('Inject memory at session start', 'context.enabled', s.context.enabled, 'checkbox')}
+    ${field('Include all projects', 'context.allProjects', s.context.allProjects, 'checkbox')}
+    ${field('Observations in index', 'context.observations', s.context.observations, 'number')}
+    ${field('Observations with full details', 'context.fullDetails', s.context.fullDetails, 'number')}
+    ${field('Session summaries', 'context.summaries', s.context.summaries, 'number')}
+    ${field('Max characters', 'context.maxChars', s.context.maxChars, 'number', '~4 characters per token')}
+    ${field('Recall related memories on each prompt', 'context.promptRecall', s.context.promptRecall, 'checkbox')}
+    ${field('Prompt recall: max items', 'context.promptRecallLimit', s.context.promptRecallLimit, 'number')}
+    ${field('Give subagents relevant memory', 'context.agentContext', s.context.agentContext, 'checkbox')}
+    ${field('Mode', 'mode', s.mode, 'select', 'Observation vocabulary. Add your own in &lt;data dir&gt;/modes/', modes.modes.map((m) => [m, m]))}
+  </div></fieldset>
+  <fieldset><legend>Capture &amp; privacy</legend><div class="grid2">
+    ${field('Capture tool use', 'capture.enabled', s.capture.enabled, 'checkbox')}
+    ${field('Redact secrets (API keys, tokens, passwords)', 'capture.redactSecrets', s.capture.redactSecrets, 'checkbox')}
+    ${field('Skip tools', 'capture.skipTools', s.capture.skipTools, 'list', 'Comma-separated tool names')}
+    ${field('Excluded projects', 'excludedProjects', s.excludedProjects, 'list', 'Nothing is recorded for these')}
+    ${field('Max chars per captured field', 'capture.maxFieldChars', s.capture.maxFieldChars, 'number')}
+    ${field('Keep raw tool events (days)', 'capture.keepRawDays', s.capture.keepRawDays, 'number')}
+  </div><p class="meta">Wrap anything in &lt;private&gt;…&lt;/private&gt; in a prompt and it is never stored.</p></fieldset>
+  <fieldset><legend>Viewer</legend><div class="grid2">
+    ${field('Start viewer automatically', 'worker.autoStart', s.worker.autoStart, 'checkbox')}
+    ${field('Port', 'worker.port', s.worker.port, 'number', 'Takes effect after restart')}
+  </div></fieldset>
+  <div class="row"><button class="primary" type="submit">Save settings</button><span class="meta">Saved to ${esc(file)}</span></div>
+  </form>
+  <fieldset style="margin-top:16px"><legend>Data</legend><div class="row">
+    <a href="/api/export?${qs({ project: projParam() })}"><button type="button">Export ${state.project === '*' ? 'all' : esc(state.project)}</button></a>
+    <label class="row"><button type="button" id="importBtn">Import…</button><input type="file" id="importFile" accept=".json,application/json" hidden></label>
+    <button type="button" id="processBtn">Process pending events now</button>
+  </div><p class="meta">Storage: ${esc(health.backend)} in ${esc(health.dataDir)} · v${esc(health.version)} · pid ${health.pid}</p></fieldset>`;
+}
+
+// ---- knowledge graph ------------------------------------------------------
+
+const gs = { data: null, sel: state.pendingEntity || null, keepSel: Boolean(state.pendingEntity), files: false, history: false, theme: '', pos: new Map(), zoom: 1, panX: 0, panY: 0, anim: 0, side: null };
+const HUES = [16, 205, 140, 280, 45, 330, 180, 100, 240, 60];
+const isDark = () => (document.documentElement.dataset.theme || (matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light')) === 'dark';
+const cssVar = (n) => getComputedStyle(document.documentElement).getPropertyValue(n).trim();
+function themeColor(themeId) {
+  if (!themeId || !gs.data) return cssVar('--muted');
+  const i = gs.data.themes.findIndex((t) => t.id === themeId);
+  return `hsl(${HUES[i % HUES.length]} 58% ${isDark() ? 64 : 44}%)`;
+}
+const radius = (n) => Math.min(16, 4 + Math.sqrt(n.degree) * 2.6);
+function rng(seed) { let a = seed >>> 0; return () => { a = (a + 0x6D2B79F5) >>> 0; let t = a; t = Math.imul(t ^ (t >>> 15), t | 1); t ^= t + Math.imul(t ^ (t >>> 7), t | 61); return ((t ^ (t >>> 14)) >>> 0) / 4294967296; }; }
+const day = (ms) => (ms ? new Date(ms).toLocaleDateString(undefined, { year: 'numeric', month: 'short', day: 'numeric' }) : '');
+
+// Force-directed layout: themes start on a ring, nodes repel, facts pull,
+// each theme gently gathers. Runs for a few seconds, then stops.
+function startLayout() {
+  const d = gs.data;
+  const themeIndex = new Map(d.themes.map((t, i) => [t.id, i]));
+  const ring = Math.max(120, 40 * Math.sqrt(d.nodes.length));
+  const center = (n) => {
+    const i = themeIndex.get(n.theme);
+    if (i === undefined) return { x: 0, y: 0 };
+    const a = (i / Math.max(1, d.themes.length)) * Math.PI * 2;
+    return { x: Math.cos(a) * ring * 0.6, y: Math.sin(a) * ring * 0.6 };
+  };
+  for (const n of d.nodes) {
+    if (gs.pos.has(n.id)) continue;
+    const r = rng(n.id * 9301 + 49297);
+    const c = center(n);
+    gs.pos.set(n.id, { x: c.x + (r() - 0.5) * 120, y: c.y + (r() - 0.5) * 120, vx: 0, vy: 0, fixed: false });
+  }
+  const byId = new Map(d.nodes.map((n) => [n.id, n]));
+  const links = d.edges.filter((e) => byId.has(e.src) && byId.has(e.dst));
+  let temp = 1;
+  cancelAnimationFrame(gs.anim);
+  const iterate = () => {
+    {
+      const nodes = d.nodes;
+      for (let i = 0; i < nodes.length; i++) {
+        const a = gs.pos.get(nodes[i].id);
+        for (let j = i + 1; j < nodes.length; j++) {
+          const b = gs.pos.get(nodes[j].id);
+          let dx = a.x - b.x; let dy = a.y - b.y;
+          let d2 = dx * dx + dy * dy;
+          if (d2 > 90000) continue;
+          if (d2 < 1) { dx = Math.random() - 0.5; dy = Math.random() - 0.5; d2 = 1; }
+          const f = 900 / d2;
+          a.vx += dx * f * 0.05; a.vy += dy * f * 0.05; b.vx -= dx * f * 0.05; b.vy -= dy * f * 0.05;
+        }
+      }
+      for (const e of links) {
+        const a = gs.pos.get(e.src); const b = gs.pos.get(e.dst);
+        const dx = b.x - a.x; const dy = b.y - a.y;
+        const dist = Math.sqrt(dx * dx + dy * dy) || 1;
+        const f = (dist - 70) * 0.012;
+        a.vx += (dx / dist) * f; a.vy += (dy / dist) * f; b.vx -= (dx / dist) * f; b.vy -= (dy / dist) * f;
+      }
+      for (const n of nodes) {
+        const p = gs.pos.get(n.id);
+        const c = center(n);
+        p.vx += (c.x - p.x) * 0.004; p.vy += (c.y - p.y) * 0.004;
+        if (p.fixed) { p.vx = 0; p.vy = 0; continue; }
+        p.x += Math.max(-8, Math.min(8, p.vx)) * temp; p.y += Math.max(-8, Math.min(8, p.vy)) * temp;
+        p.vx *= 0.6; p.vy *= 0.6;
+      }
+      temp *= 0.985;
+    }
+  };
+  // With reduced motion the layout is computed first and drawn once.
+  if (matchMedia('(prefers-reduced-motion: reduce)').matches) {
+    while (temp > 0.03) iterate();
+    if (!gs.userMoved) fitView();
+    draw();
+    return;
+  }
+  const step = () => {
+    for (let i = 0; i < 3 && temp > 0.03; i++) iterate();
+    if (!gs.userMoved) fitView();
+    draw();
+    if (temp > 0.03 && state.tab === 'graph') gs.anim = requestAnimationFrame(step);
+  };
+  gs.anim = requestAnimationFrame(step);
+}
+
+// Zoom and centre so every dot and most labels are on screen.
+function fitView() {
+  const cv = $('#gc');
+  if (!cv || !gs.data?.nodes.length) return;
+  let x0 = Infinity; let y0 = Infinity; let x1 = -Infinity; let y1 = -Infinity;
+  for (const n of gs.data.nodes) {
+    const p = gs.pos.get(n.id);
+    if (!p) continue;
+    x0 = Math.min(x0, p.x); y0 = Math.min(y0, p.y); x1 = Math.max(x1, p.x + 70); y1 = Math.max(y1, p.y);
+  }
+  const pad = 40;
+  gs.zoom = Math.max(0.2, Math.min(1.6, (cv.clientWidth - pad * 2) / Math.max(1, x1 - x0), (cv.clientHeight - pad * 2) / Math.max(1, y1 - y0)));
+  gs.panX = -((x0 + x1) / 2) * gs.zoom;
+  gs.panY = -((y0 + y1) / 2) * gs.zoom;
+}
+
+function neighbours(id) {
+  const out = new Set([id]);
+  for (const e of gs.data.edges) { if (e.src === id) out.add(e.dst); if (e.dst === id) out.add(e.src); }
+  return out;
+}
+
+function draw() {
+  const cv = $('#gc');
+  if (!cv || !gs.data) return;
+  const dpr = window.devicePixelRatio || 1;
+  const w = cv.clientWidth; const h = cv.clientHeight;
+  if (cv.width !== Math.round(w * dpr) || cv.height !== Math.round(h * dpr)) { cv.width = Math.round(w * dpr); cv.height = Math.round(h * dpr); }
+  const ctx = cv.getContext('2d');
+  ctx.setTransform(1, 0, 0, 1, 0, 0);
+  ctx.clearRect(0, 0, cv.width, cv.height);
+  ctx.setTransform(dpr * gs.zoom, 0, 0, dpr * gs.zoom, dpr * (w / 2 + gs.panX), dpr * (h / 2 + gs.panY));
+  const near = gs.sel ? neighbours(gs.sel) : null;
+  const inTheme = (n) => !gs.theme || n.theme === gs.theme;
+  const byId = new Map(gs.data.nodes.map((n) => [n.id, n]));
+  const muted = cssVar('--muted'); const accent = cssVar('--accent'); const text = cssVar('--text'); const panel = cssVar('--panel');
+  for (const e of gs.data.edges) {
+    const a = gs.pos.get(e.src); const b = gs.pos.get(e.dst);
+    if (!a || !b) continue;
+    const hot = gs.sel && (e.src === gs.sel || e.dst === gs.sel);
+    const faded = (gs.sel && !hot) || (gs.theme && !(inTheme(byId.get(e.src)) && inTheme(byId.get(e.dst))));
+    ctx.globalAlpha = faded ? 0.12 : hot ? 0.95 : 0.45;
+    ctx.strokeStyle = hot ? accent : muted;
+    ctx.lineWidth = (hot ? 2 : 1) / gs.zoom;
+    ctx.setLineDash(!e.current ? [4 / gs.zoom, 4 / gs.zoom] : e.confidence !== 'STATED' ? [7 / gs.zoom, 3 / gs.zoom] : []);
+    ctx.beginPath(); ctx.moveTo(a.x, a.y); ctx.lineTo(b.x, b.y); ctx.stroke();
+    if (hot) {
+      const dst = byId.get(e.dst); const ang = Math.atan2(b.y - a.y, b.x - a.x); const r = radius(dst) + 3;
+      const tx = b.x - Math.cos(ang) * r; const ty = b.y - Math.sin(ang) * r; const s = 7 / gs.zoom;
+      ctx.setLineDash([]); ctx.fillStyle = accent; ctx.beginPath();
+      ctx.moveTo(tx, ty); ctx.lineTo(tx - Math.cos(ang - 0.4) * s, ty - Math.sin(ang - 0.4) * s); ctx.lineTo(tx - Math.cos(ang + 0.4) * s, ty - Math.sin(ang + 0.4) * s); ctx.fill();
+    }
+  }
+  ctx.setLineDash([]);
+  for (const n of gs.data.nodes) {
+    const p = gs.pos.get(n.id);
+    const faded = (near && !near.has(n.id)) || !inTheme(n);
+    ctx.globalAlpha = faded ? 0.2 : 1;
+    ctx.fillStyle = themeColor(n.theme);
+    ctx.beginPath(); ctx.arc(p.x, p.y, radius(n), 0, Math.PI * 2); ctx.fill();
+    if (n.kind === 'task' && (n.status === 'todo' || n.status === 'doing')) { ctx.strokeStyle = text; ctx.lineWidth = 1.5 / gs.zoom; ctx.stroke(); }
+    if (n.id === gs.sel) { ctx.strokeStyle = accent; ctx.lineWidth = 3 / gs.zoom; ctx.beginPath(); ctx.arc(p.x, p.y, radius(n) + 4 / gs.zoom, 0, Math.PI * 2); ctx.stroke(); }
+  }
+  ctx.font = `${12 / gs.zoom}px system-ui, sans-serif`;
+  ctx.textBaseline = 'middle';
+  for (const n of gs.data.nodes) {
+    const show = n.id === gs.sel || (near && near.has(n.id)) || (!near && (gs.zoom > 1.3 || n.degree >= 3 || gs.data.nodes.length <= 40));
+    if (!show || ((near && !near.has(n.id)) || !inTheme(n))) continue;
+    const p = gs.pos.get(n.id);
+    const x = p.x + radius(n) + 4 / gs.zoom;
+    ctx.globalAlpha = 1; ctx.lineWidth = 3 / gs.zoom; ctx.strokeStyle = panel; ctx.strokeText(n.name, x, p.y);
+    ctx.fillStyle = text; ctx.fillText(n.name, x, p.y);
+  }
+  ctx.globalAlpha = 1;
+}
+
+function toWorld(cv, ev) {
+  const r = cv.getBoundingClientRect();
+  return { x: (ev.clientX - r.left - r.width / 2 - gs.panX) / gs.zoom, y: (ev.clientY - r.top - r.height / 2 - gs.panY) / gs.zoom };
+}
+function hit(cv, ev) {
+  const w = toWorld(cv, ev);
+  let best = null;
+  for (const n of gs.data.nodes) {
+    const p = gs.pos.get(n.id);
+    const d = Math.hypot(p.x - w.x, p.y - w.y);
+    if (d <= radius(n) + 4 / gs.zoom && (!best || d < best.d)) best = { n, d };
+  }
+  return best?.n || null;
+}
+
+function wireCanvas() {
+  const cv = $('#gc');
+  let drag = null;
+  cv.addEventListener('pointerdown', (ev) => {
+    cv.setPointerCapture(ev.pointerId);
+    const n = hit(cv, ev);
+    drag = { n, x: ev.clientX, y: ev.clientY, moved: false, panX: gs.panX, panY: gs.panY };
+    if (n) gs.pos.get(n.id).fixed = true;
+    cv.classList.add('dragging');
+  });
+  cv.addEventListener('pointermove', (ev) => {
+    if (!drag) {
+      const n = hit(cv, ev);
+      cv.style.cursor = n ? 'pointer' : 'grab';
+      $('#gHint').textContent = n ? `${n.name} · ${n.kind}${n.status ? ` · ${n.status}` : ''} · ${n.degree} facts · ${n.mentions} notes` : 'Drag to move · scroll or +/− to zoom · click a dot for details';
+      return;
+    }
+    if (Math.hypot(ev.clientX - drag.x, ev.clientY - drag.y) > 4) { drag.moved = true; gs.userMoved = true; }
+    if (drag.n) { const w = toWorld(cv, ev); const p = gs.pos.get(drag.n.id); p.x = w.x; p.y = w.y; }
+    else { gs.panX = drag.panX + ev.clientX - drag.x; gs.panY = drag.panY + ev.clientY - drag.y; }
+    draw();
+  });
+  const end = (ev) => {
+    if (!drag) return;
+    if (drag.n) gs.pos.get(drag.n.id).fixed = drag.moved;
+    if (!drag.moved) selectEntity(drag.n ? drag.n.id : null);
+    drag = null;
+    cv.classList.remove('dragging');
+  };
+  cv.addEventListener('pointerup', end);
+  cv.addEventListener('pointercancel', end);
+  cv.addEventListener('wheel', (ev) => {
+    ev.preventDefault();
+    zoomBy(ev.deltaY < 0 ? 1.15 : 1 / 1.15, ev);
+  }, { passive: false });
+}
+
+function zoomBy(f, ev) {
+  const cv = $('#gc');
+  gs.userMoved = true;
+  const before = ev ? toWorld(cv, ev) : null;
+  gs.zoom = Math.max(0.2, Math.min(5, gs.zoom * f));
+  if (before) { const after = toWorld(cv, ev); gs.panX += (after.x - before.x) * gs.zoom; gs.panY += (after.y - before.y) * gs.zoom; }
+  draw();
+}
+
+function centerOn(id) {
+  const p = gs.pos.get(id);
+  gs.userMoved = true;
+  if (p) { gs.panX = -p.x * gs.zoom; gs.panY = -p.y * gs.zoom; }
+}
+
+async function renderGraph() {
+  if (state.project === '*') {
+    const rows = await api('/api/projects');
+    main.innerHTML = `<div class="empty">Pick a project to see its knowledge graph.<div class="row" style="justify-content:center;margin-top:12px">${rows.map((p) => `<button data-pick="${esc(p.project)}">${esc(p.project)}</button>`).join('') || 'No projects yet.'}</div></div>`;
+    return;
+  }
+  const d = await api(`/api/graph?${qs({ project: state.project, files: gs.files ? 1 : '', history: gs.history ? 1 : '' })}`);
+  if (gs.data?.project !== d.project) { gs.pos = new Map(); gs.zoom = 1; gs.panX = 0; gs.panY = 0; gs.userMoved = false; if (!gs.keepSel) gs.sel = null; gs.theme = ''; }
+  gs.keepSel = false;
+  gs.data = d;
+  const exp = (f, label) => `<a href="/api/graph/export?${qs({ project: state.project, format: f, history: gs.history ? 1 : '' })}" download><button type="button">${label}</button></a>`;
+  main.innerHTML = `<div class="tools">
+      <select id="gTheme" aria-label="Theme"><option value="">All themes</option>${d.themes.map((t) => `<option value="${esc(t.id)}" ${gs.theme === t.id ? 'selected' : ''}>${esc(t.label)} (${t.size})</option>`).join('')}</select>
+      <input id="gFind" type="search" placeholder="Find an entity…" aria-label="Find an entity">
+      <label class="check"><input type="checkbox" id="gFiles" ${gs.files ? 'checked' : ''}> Files</label>
+      <label class="check"><input type="checkbox" id="gHistory" ${gs.history ? 'checked' : ''}> Past facts</label>
+      <span class="meta">${d.nodes.length}${d.total > d.nodes.length ? ` of ${d.total}` : ''} entities · ${d.edges.length} facts${d.stats.review ? ` · <a href="#" data-tab-go="review">${d.stats.review} to review</a>` : ''}</span>
+      <span class="actions">Export: ${exp('json', 'JSON')} ${exp('graphml', 'GraphML')} ${exp('cypher', 'Cypher')}</span>
+    </div>
+    <div class="graph-wrap">
+      <div class="canvas-box"><canvas id="gc" role="img" aria-label="Knowledge graph of ${esc(state.project)}: ${d.nodes.length} entities and ${d.edges.length} facts. The panel lists them."></canvas>
+        <div class="zoom"><button type="button" id="gIn" aria-label="Zoom in">+</button><button type="button" id="gOut" aria-label="Zoom out">−</button><button type="button" id="gFit" aria-label="Reset view">⤢</button></div>
+        <div class="hint" id="gHint">Drag to move · scroll or +/− to zoom · click a dot for details</div></div>
+      <aside class="side" id="gSide" aria-live="polite"></aside>
+    </div>`;
+  if (!d.nodes.length) {
+    $('.canvas-box').innerHTML = '<div class="empty">No entities yet. They appear as Claude records people, documents, tools and decisions.</div>';
+  } else {
+    wireCanvas();
+    startLayout();
+  }
+  $('#gTheme').addEventListener('change', (e) => { gs.theme = e.target.value; draw(); });
+  $('#gFiles').addEventListener('change', (e) => { gs.files = e.target.checked; renderGraph(); });
+  $('#gHistory').addEventListener('change', (e) => { gs.history = e.target.checked; renderGraph(); });
+  $('#gFind').addEventListener('keydown', (e) => {
+    if (e.key !== 'Enter') return;
+    const q = e.target.value.trim().toLowerCase();
+    const n = gs.data.nodes.find((x) => x.name.toLowerCase() === q) || gs.data.nodes.find((x) => x.name.toLowerCase().includes(q));
+    if (n) { centerOn(n.id); selectEntity(n.id); } else toast('No entity with that name in view');
+  });
+  $('#gIn')?.addEventListener('click', () => zoomBy(1.25));
+  $('#gOut')?.addEventListener('click', () => zoomBy(1 / 1.25));
+  $('#gFit')?.addEventListener('click', () => { gs.userMoved = false; fitView(); draw(); });
+  if (gs.sel) selectEntity(gs.sel); else renderOverview();
+}
+
+async function renderOverview() {
+  const side = $('#gSide');
+  if (!side) return;
+  const o = await api(`/api/graph/overview?${qs({ project: state.project })}`);
+  const ent = (e) => `<button class="namebtn" data-select="${e.id}">${esc(e.name)}</button>`;
+  side.innerHTML = `<h3>${esc(state.project)}</h3><p class="meta">Click a dot or a name for details.</p>
+    ${o.keyEntities.length ? `<h4>Key entities</h4><ul>${o.keyEntities.map((e) => `<li>${ent(e)} <span class="meta">${esc(e.kind)} · ${e.degree} facts · ${e.mentions} notes</span></li>`).join('')}</ul>` : ''}
+    ${o.themes.length ? `<h4>Themes</h4><ul>${o.themes.map((t) => `<li><div class="row"><span class="swatch" style="background:${themeColor(t.id)}"></span><button class="namebtn" data-theme-pick="${esc(t.id)}">${esc(t.label)}</button><span class="meta">${t.size} things · cohesion ${t.cohesion}</span></div><div class="meta">${t.members.map(ent).join(', ')}</div></li>`).join('')}</ul>` : ''}
+    ${o.unexpected.length ? `<h4>Unexpected links</h4><ul>${o.unexpected.map((u) => `<li>${ent({ id: u.fact.src, name: u.fact.src_name })} —${esc(u.fact.type)}→ ${ent({ id: u.fact.dst, name: u.fact.dst_name })}<div class="meta">${esc(u.reasons.join('; '))}</div></li>`).join('')}</ul>` : ''}
+    ${o.questions.length ? `<h4>Open questions</h4><ul>${o.questions.map((q) => `<li>${q.id ? `<button class="namebtn" data-select="${q.id}" style="font-weight:400">${esc(q.question)}</button>` : esc(q.question)}</li>`).join('')}</ul>` : ''}`;
+}
+
+function factRow(f, selfId) {
+  const name = (id, n) => (id === selfId ? `<b>${esc(n)}</b>` : `<button class="namebtn" data-select="${id}">${esc(n)}</button>`);
+  const when = f.current ? `since ${day(f.valid_from)}` : `${day(f.valid_from)} → ${day(f.valid_to)}`;
+  return `<li class="fact${f.current ? '' : ' closed'}" data-fact="${f.id}">
+    <div class="what">${name(f.src, f.src_name)} —${esc(f.type)}→ ${name(f.dst, f.dst_name)}</div>
+    <div class="extra"><span class="conf ${esc(f.confidence)}">${esc(f.confidence.toLowerCase())}</span> ${when}${f.previous?.length ? ` · replaced ${esc(f.previous.join(', '))}` : ''}${f.fact ? ` · ${esc(f.fact)}` : ''}${f.why ? ` · why: ${esc(f.why)}` : ''}</div>
+    ${f.current ? `<div class="row">${f.confidence !== 'STATED' ? '<button class="link" data-fact-act="confirm">Confirm</button>' : ''}<button class="link" data-fact-act="close" title="No longer true; keep as history">No longer true</button><button class="link" data-fact-act="delete" title="Wrong; remove it">Delete</button></div>` : ''}
+  </li>`;
+}
+
+async function selectEntity(id) {
+  gs.sel = id;
+  draw();
+  if (!id) return renderOverview();
+  const side = $('#gSide');
+  if (!side) return;
+  let d;
+  try { d = await api(`/api/entities/${id}`); } catch (err) { side.innerHTML = `<p class="meta">${esc(err.message)}</p>`; return; }
+  const e = d.entity;
+  const current = d.facts.filter((f) => f.current);
+  const past = d.facts.filter((f) => !f.current);
+  const kinds = (state.mode?.entities || []).map((k) => (typeof k === 'string' ? k : k.id));
+  side.innerHTML = `<div class="row"><button class="link" data-select="">← Overview</button></div>
+    <h3>${esc(e.name)}</h3>
+    <div class="meta"><span class="badge">${esc(e.kind)}</span>${e.status ? `<span class="badge">${esc(e.status)}</span>` : ''}<span>${e.mention_count} notes</span><span>seen ${day(e.first_seen)} – ${day(e.last_seen)}</span></div>
+    ${e.aliases.length ? `<p class="meta">Also called: ${e.aliases.map(esc).join(', ')}</p>` : ''}
+    ${e.summary ? `<p>${esc(e.summary)}</p>` : ''}
+    <div class="row" style="margin-top:6px"><button type="button" data-ent-act="edit">Edit</button><button type="button" data-ent-act="merge">Merge into…</button><button type="button" class="danger" data-ent-act="delete">Delete</button></div>
+    <div id="entForm"></div>
+    <h4>Facts</h4>${current.length ? `<ul>${current.map((f) => factRow(f, e.id)).join('')}</ul>` : '<p class="meta">No current facts.</p>'}
+    ${past.length ? `<details><summary class="meta">${past.length} past fact${past.length > 1 ? 's' : ''}</summary><ul>${past.map((f) => factRow(f, e.id)).join('')}</ul></details>` : ''}
+    <h4>Notes</h4>${d.notes.length ? `<ul>${d.notes.map((n) => `<li data-id="${n.id}"><span class="badge">#${n.id}</span> ${esc(n.title)} <span class="meta">${day(n.created_at)}</span>${n.lesson ? ` <span class="lesson">${esc(n.lesson.replace('_', ' '))}</span>` : ''}
+      <div class="row"><button class="link" data-feedback="useful">Useful</button><button class="link" data-feedback="dead_end">Dead end</button></div></li>`).join('')}</ul>` : '<p class="meta">No notes mention it.</p>'}`;
+  side.dataset.entity = e.id;
+  side.dataset.kinds = JSON.stringify(kinds);
+}
+
+async function entityAction(act, side) {
+  const id = Number(side.dataset.entity);
+  const form = $('#entForm');
+  if (act === 'edit') {
+    const d = await api(`/api/entities/${id}`);
+    const kinds = JSON.parse(side.dataset.kinds || '[]');
+    if (!kinds.includes(d.entity.kind)) kinds.unshift(d.entity.kind);
+    form.innerHTML = `<form class="inline-form" id="entEdit">
+      <label class="field">Name <input name="name" id="entName" value="${esc(d.entity.name)}" required></label>
+      <label class="field">Kind <select name="kind" id="entKind">${kinds.map((k) => `<option ${k === d.entity.kind ? 'selected' : ''}>${esc(k)}</option>`).join('')}</select></label>
+      <label class="field">Status <select name="status" id="entStatus"><option value="">—</option>${['todo', 'doing', 'done', 'dropped'].map((s) => `<option ${s === d.entity.status ? 'selected' : ''}>${s}</option>`).join('')}</select></label>
+      <div class="row"><button class="primary">Save</button><button type="button" data-ent-act="cancel">Cancel</button></div></form>`;
+    $('#entName').focus();
+  }
+  if (act === 'merge') {
+    form.innerHTML = `<div class="inline-form"><label class="field">Merge “${esc(side.querySelector('h3').textContent)}” into… <input type="search" id="mergeFind" placeholder="Type a name"></label><ul id="mergeList"></ul>
+      <div class="row"><button type="button" data-ent-act="cancel">Cancel</button></div></div>`;
+    const input = $('#mergeFind');
+    input.focus();
+    input.addEventListener('input', async () => {
+      const rows = input.value.trim() ? await api(`/api/entities?${qs({ project: state.project, q: input.value.trim(), limit: 8 })}`) : [];
+      $('#mergeList').innerHTML = rows.filter((r) => r.id !== id).map((r) => `<li><button type="button" data-merge-into="${r.id}">${esc(r.name)}</button> <span class="meta">${esc(r.kind)}</span></li>`).join('') || '<li class="meta">No match</li>';
+    });
+  }
+  if (act === 'cancel') form.innerHTML = '';
+  if (act === 'delete') {
+    if (!confirm('Delete this entity and its facts? Notes stay.')) return;
+    await api(`/api/entities/${id}`, { method: 'DELETE' });
+    toast('Deleted');
+    gs.sel = null;
+    renderGraph();
+  }
+}
+
+main.addEventListener('submit', async (e) => {
+  if (e.target.id !== 'entEdit') return;
+  e.preventDefault();
+  const side = $('#gSide');
+  const f = e.target;
+  try {
+    const d = await api(`/api/entities/${side.dataset.entity}`, { method: 'PATCH', body: JSON.stringify({ name: f.name.value, kind: f.kind.value, status: f.status.value || null }) });
+    toast('Saved');
+    gs.sel = d.entity.id;
+    gs.keepSel = true;
+    renderGraph();
+  } catch (err) { toast(err.message); }
+});
+
+async function renderReview() {
+  const items = await api(`/api/review?${qs({ project: projParam() })}`);
+  const labels = {
+    'entity-merge': ['Yes, merge them', 'No, keep apart'],
+    'fact-check': ['Correct', 'Wrong – remove'],
+    'note-duplicate': ['Duplicate – remove the newer', 'Keep both'],
+  };
+  main.innerHTML = `<p class="meta">Things memory wasn't sure about. Your answer is remembered; the same pair is never asked again.</p>${items.map((r) => `
+    <article class="card review" data-review="${r.id}">
+      <p class="q">${esc(r.question)}</p>
+      <div class="meta"><span class="badge">${esc(r.kind.replace('-', ' '))}</span><span>${esc(r.project)}</span>${r.score ? `<span>${Math.round(r.score * 100)}% similar</span>` : ''}${r.reason ? `<span>${esc(r.reason)}</span>` : ''}<span>${when(r.created_at)}</span></div>
+      <div class="row" style="margin-top:8px"><button class="primary" data-answer="1">${labels[r.kind]?.[0] || 'Yes'}</button><button data-answer="0">${labels[r.kind]?.[1] || 'No'}</button></div>
+    </article>`).join('') || '<div class="empty">Nothing to review.</div>'}`;
+}
+
+async function refreshReviewCount() {
+  try {
+    const s = await api(`/api/stats?${qs({ project: projParam() })}`);
+    const n = s.graph?.review || 0;
+    $('#reviewCount').innerHTML = n ? `<span class="tabcount">${n}</span>` : '';
+  } catch {}
+}
+
+main.addEventListener('click', async (e) => {
+  const t = e.target.closest('button, a');
+  if (!t) return;
+  try {
+    if (t.dataset.pick) { state.project = t.dataset.pick; $('#project').value = state.project; try { localStorage.setItem('cmem-project', state.project); } catch {} return render(); }
+    if (t.dataset.select !== undefined) { const id = Number(t.dataset.select) || null; if (id) centerOn(id); return selectEntity(id); }
+    if (t.dataset.themePick) { gs.theme = t.dataset.themePick; $('#gTheme').value = gs.theme; return draw(); }
+    if (t.dataset.entAct) return entityAction(t.dataset.entAct, $('#gSide'));
+    if (t.dataset.mergeInto) {
+      const side = $('#gSide');
+      const d = await api(`/api/entities/${side.dataset.entity}/merge`, { method: 'POST', body: JSON.stringify({ into: Number(t.dataset.mergeInto) }) });
+      toast(`Merged into ${d.entity.name}`);
+      gs.sel = d.entity.id; gs.keepSel = true;
+      return renderGraph();
+    }
+    if (t.dataset.factAct) {
+      const id = t.closest('[data-fact]').dataset.fact;
+      if (t.dataset.factAct === 'confirm') await api(`/api/facts/${id}`, { method: 'PATCH', body: JSON.stringify({ confidence: 'STATED' }) });
+      if (t.dataset.factAct === 'close') await api(`/api/facts/${id}`, { method: 'PATCH', body: JSON.stringify({ close: true }) });
+      if (t.dataset.factAct === 'delete') { if (!confirm('Delete this fact?')) return; await api(`/api/facts/${id}`, { method: 'DELETE' }); }
+      toast('Updated');
+      gs.keepSel = true;
+      return renderGraph();
+    }
+    if (t.dataset.entity) {
+      state.tab = 'graph';
+      if (state.project !== t.dataset.project) { state.project = t.dataset.project; $('#project').value = state.project; }
+      gs.sel = Number(t.dataset.entity); gs.keepSel = true; gs.data = null;
+      return render();
+    }
+    if (t.dataset.feedback) {
+      const id = Number(t.closest('[data-id]').dataset.id);
+      const r = await api('/api/feedback', { method: 'POST', body: JSON.stringify({ ids: [id], outcome: t.dataset.feedback, project: projParam() || undefined }) });
+      return toast(r.message.replace(/^Recorded/, 'Marked'));
+    }
+    if (t.dataset.answer !== undefined) {
+      const card = t.closest('[data-review]');
+      await api(`/api/review/${card.dataset.review}`, { method: 'POST', body: JSON.stringify({ accept: t.dataset.answer === '1' }) });
+      card.remove();
+      toast('Thanks – remembered');
+      refreshReviewCount();
+      if (!main.querySelector('[data-review]')) renderReview();
+    }
+  } catch (err) { toast(err.message); }
+});
+
+window.addEventListener('resize', () => { if (state.tab === 'graph') draw(); });
+
+const renderers = { memory: renderMemory, graph: renderGraph, review: renderReview, sessions: renderSessions, summaries: renderSummaries, prompts: renderPrompts, context: renderContext, settings: renderSettings };
+
+async function render() {
+  document.querySelectorAll('#tabs button').forEach((b) => b.classList.toggle('active', b.dataset.tab === state.tab));
+  if (state.tab !== 'graph') cancelAnimationFrame(gs.anim);
+  refreshReviewCount();
+  try { await renderers[state.tab](); } catch (err) { main.innerHTML = `<div class="empty">Could not load: ${esc(err.message)}</div>`; }
+}
+
+async function loadProjects() {
+  const rows = await api('/api/projects');
+  const sel = $('#project');
+  sel.innerHTML = `<option value="*">All projects</option>${rows.map((p) => `<option value="${esc(p.project)}">${esc(p.project)} (${p.observations})</option>`).join('')}`;
+  if (![...sel.options].some((o) => o.value === state.project)) state.project = '*';
+  sel.value = state.project;
+}
+
+$('#tabs').addEventListener('click', (e) => { const b = e.target.closest('button[data-tab]'); if (!b) return; state.tab = b.dataset.tab; render(); });
+$('#project').addEventListener('change', (e) => { state.project = e.target.value; try { localStorage.setItem('cmem-project', state.project); } catch {} render(); });
+let qTimer;
+$('#q').addEventListener('input', (e) => { clearTimeout(qTimer); qTimer = setTimeout(() => { state.q = e.target.value.trim(); if (!['memory', 'summaries', 'prompts'].includes(state.tab)) state.tab = 'memory'; render(); }, 250); });
+$('#theme').addEventListener('click', () => {
+  const cur = document.documentElement.dataset.theme || (matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light');
+  const next = cur === 'dark' ? 'light' : 'dark';
+  document.documentElement.dataset.theme = next;
+  try { localStorage.setItem('cmem-theme', next); } catch {}
+  if (state.tab === 'graph') draw();
+});
+
+function openDialog(o) {
+  state.editing = o || null;
+  const f = $('#dlgForm');
+  $('#dlgTitle').textContent = o ? `Edit #${o.id}` : 'Remember something';
+  $('#dlgType').innerHTML = (state.mode?.types || []).map((t) => `<option value="${esc(t.id)}">${esc(t.icon)} ${esc(t.label)}</option>`).join('');
+  f.title.value = o?.title || '';
+  f.text.value = o?.narrative || '';
+  f.type.value = o?.type || 'note';
+  f.project.value = o?.project || (state.project === '*' ? '' : state.project);
+  $('#dlg').showModal();
+}
+$('#remember').addEventListener('click', () => openDialog());
+$('#dlg').addEventListener('close', async () => {
+  if ($('#dlg').returnValue !== 'ok') return;
+  const f = $('#dlgForm');
+  const body = { title: f.title.value, text: f.text.value, narrative: f.text.value, type: f.type.value, project: f.project.value || 'default' };
+  try {
+    if (state.editing) { await api(`/api/observations/${state.editing.id}`, { method: 'PATCH', body: JSON.stringify(body) }); toast('Updated'); }
+    else { await api('/api/observations', { method: 'POST', body: JSON.stringify(body) }); toast('Saved'); }
+    await loadProjects(); render();
+  } catch (err) { toast(err.message); }
+});
+
+main.addEventListener('click', async (e) => {
+  const t = e.target;
+  if (t.id === 'moreBtn') { state.offset += 40; return renderMemory(true); }
+  if (t.dataset.type !== undefined && t.classList.contains('chip')) { state.type = t.dataset.type; return renderMemory(); }
+  if (t.dataset.session) return renderSession(t.dataset.session);
+  if (t.dataset.tabGo) { state.tab = t.dataset.tabGo; return render(); }
+  if (t.id === 'processNow' || t.id === 'processBtn') {
+    e.preventDefault(); toast('Processing…');
+    try { const r = await api('/api/process', { method: 'POST' }); toast(r.busy ? 'Already processing' : `Processed ${r.results.reduce((n, x) => n + x.processed, 0)} events`); render(); } catch (err) { toast(err.message); }
+    return;
+  }
+  if (t.id === 'importBtn') return $('#importFile').click();
+  const act = t.dataset.act;
+  if (!act) return;
+  if (act === 'edit') { const id = t.closest('[data-id]').dataset.id; return openDialog(await api(`/api/observations/${id}`)); }
+  if (act === 'del') {
+    const card = t.closest('[data-id]');
+    if (!confirm(`Delete observation #${card.dataset.id}?`)) return;
+    await api(`/api/observations/${card.dataset.id}`, { method: 'DELETE' }); card.remove(); toast('Deleted');
+  }
+  if (act === 'delsum') {
+    const card = t.closest('[data-sid]');
+    if (!confirm('Delete this summary?')) return;
+    await api(`/api/summaries/${card.dataset.sid}`, { method: 'DELETE' }); card.remove(); toast('Deleted');
+  }
+  if (act === 'delsession') {
+    if (!confirm('Delete this session and everything recorded in it?')) return;
+    await api(`/api/sessions/${encodeURIComponent(t.dataset.sid)}`, { method: 'DELETE' }); toast('Deleted'); render();
+  }
+});
+
+main.addEventListener('change', async (e) => {
+  if (e.target.id !== 'importFile' || !e.target.files[0]) return;
+  try {
+    const data = JSON.parse(await e.target.files[0].text());
+    const r = await api('/api/import', { method: 'POST', body: JSON.stringify(data) });
+    toast(`Imported ${r.observations} observations, ${r.summaries} summaries (${r.skipped} duplicates skipped)`);
+    await loadProjects();
+  } catch (err) { toast(`Import failed: ${err.message}`); }
+});
+
+main.addEventListener('submit', async (e) => {
+  if (e.target.id !== 'settingsForm') return;
+  e.preventDefault();
+  const patch = {};
+  e.target.querySelectorAll('[data-key]').forEach((el) => {
+    let v = el.type === 'checkbox' ? el.checked : el.value;
+    if (el.dataset.type === 'number') v = Number(v);
+    if (el.dataset.type === 'list') v = v.split(',').map((x) => x.trim()).filter(Boolean);
+    const keys = el.dataset.key.split('.');
+    let cur = patch;
+    keys.slice(0, -1).forEach((k) => { cur = cur[k] ||= {}; });
+    cur[keys[keys.length - 1]] = v;
+  });
+  try { await api('/api/settings', { method: 'PUT', body: JSON.stringify(patch) }); state.mode = (await api('/api/modes')).mode; toast('Settings saved'); render(); } catch (err) { toast(err.message); }
+});
+
+function connect() {
+  const es = new EventSource('/api/stream');
+  es.addEventListener('hello', () => $('#live').classList.add('live'));
+  es.addEventListener('observations', (ev) => {
+    const o = JSON.parse(ev.data);
+    if (state.tab !== 'memory' || state.q || (state.type && state.type !== o.type) || (state.project !== '*' && state.project !== o.project)) return;
+    $('#feed .empty')?.remove();
+    $('#feed')?.insertAdjacentHTML('afterbegin', obsCard(o, true));
+  });
+  es.onerror = () => { $('#live').classList.remove('live'); };
+}
+
+(async () => {
+  try {
+    const [h, m] = await Promise.all([api('/api/health'), api('/api/modes')]);
+    $('#ver').textContent = `v${h.version}`;
+    state.mode = m.mode;
+    await loadProjects();
+  } catch {}
+  render();
+  connect();
+})();
+</script>
+</body>
+</html>

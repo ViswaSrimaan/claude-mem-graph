@@ -1,0 +1,50 @@
+{
+  "id": "general",
+  "name": "General",
+  "description": "Knowledge work in Claude Cowork: research, documents, analysis, planning",
+  "language": "English",
+  "types": [
+    { "id": "deliverable", "label": "Deliverable", "icon": "◆", "description": "A document, file, analysis or artifact that was produced" },
+    { "id": "finding", "label": "Finding", "icon": "○", "description": "A fact or insight learned from sources, data or files" },
+    { "id": "decision", "label": "Decision", "icon": "⚖", "description": "A choice that was made, with the reason" },
+    { "id": "preference", "label": "Preference", "icon": "♥", "description": "How the user likes things done (tone, format, tools, people)" },
+    { "id": "task", "label": "Open task", "icon": "☐", "description": "Follow-up work that was agreed or left unfinished" },
+    { "id": "contact", "label": "Context", "icon": "◎", "description": "Background on a project, client, team or recurring topic" },
+    { "id": "change", "label": "Change", "icon": "✓", "description": "Something in a file or system was modified" },
+    { "id": "gotcha", "label": "Gotcha", "icon": "⚠", "description": "Something that went wrong or a trap to avoid next time" },
+    { "id": "note", "label": "Note", "icon": "✎", "description": "Manually saved memory" }
+  ],
+  "concepts": ["background", "result", "reasoning", "constraint", "follow-up", "source", "style"],
+  "entities": [
+    { "id": "person", "description": "someone involved" },
+    { "id": "organisation", "description": "client, company, team" },
+    { "id": "project", "description": "a piece of work with a goal" },
+    { "id": "document", "description": "report, file, deck, dataset, page" },
+    { "id": "topic", "description": "subject, market, region, concept" },
+    { "id": "task", "description": "something to do" },
+    { "id": "decision", "description": "a choice that was made" },
+    { "id": "preference", "description": "how someone likes things done" },
+    { "id": "format", "description": "file type or style, e.g. PDF" },
+    { "id": "event", "description": "meeting, deadline, launch" },
+    { "id": "place", "description": "location" }
+  ],
+  "relations": [
+    { "id": "works at", "single": true },
+    { "id": "works on" },
+    { "id": "contact for" },
+    { "id": "reports to", "single": true },
+    { "id": "for" },
+    { "id": "about" },
+    { "id": "uses" },
+    { "id": "covers" },
+    { "id": "needs" },
+    { "id": "part of" },
+    { "id": "decided" },
+    { "id": "prefers", "single": true },
+    { "id": "prefers format", "single": true },
+    { "id": "owned by", "single": true },
+    { "id": "due", "single": true },
+    { "id": "related to" }
+  ],
+  "focus": "Record what a colleague would need to pick up this work later: what was produced and where it is saved, key findings with their sources, decisions and why, the user's stated preferences, and open follow-ups. Name concrete files, people, dates and numbers."
+}

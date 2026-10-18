@@ -1,0 +1,36 @@
+{
+  "name": "claude-mem-local",
+  "version": "1.0.0",
+  "description": "Free, open-source, local-first persistent memory for Claude Code and Claude Cowork. No account, subscription or telemetry.",
+  "type": "module",
+  "license": "Apache-2.0",
+  "private": true,
+  "engines": {
+    "node": ">=18.17"
+  },
+  "bin": {
+    "cmem": "plugin/scripts/cmem.mjs"
+  },
+  "scripts": {
+    "test": "node --test \"tests/*.test.mjs\"",
+    "build": "node scripts/build-cowork.mjs",
+    "package": "node scripts/package.mjs",
+    "install-plugin": "node scripts/install.mjs",
+    "install-plugin:cowork": "node scripts/install.mjs --cowork",
+    "uninstall-plugin": "node scripts/install.mjs --uninstall",
+    "viewer": "node plugin/scripts/cmem.mjs worker start",
+    "doctor": "node plugin/scripts/cmem.mjs doctor",
+    "validate": "claude plugin validate . && claude plugin validate plugin && claude plugin validate cowork",
+    "install-desktop": "node scripts/install-desktop.mjs"
+  },
+  "keywords": [
+    "claude",
+    "claude-code",
+    "cowork",
+    "memory",
+    "mcp",
+    "sqlite",
+    "local-first",
+    "plugin"
+  ]
+}

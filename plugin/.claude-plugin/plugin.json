@@ -1,0 +1,8 @@
+{
+  "name": "mem-local",
+  "version": "1.0.0",
+  "description": "Free, local, persistent memory for Claude Code: captures tool use, compresses it into searchable observations, and brings relevant context back into new sessions. No account, no subscription, no telemetry.",
+  "author": { "name": "claude-mem-local contributors" },
+  "license": "Apache-2.0",
+  "keywords": ["memory", "context", "sqlite", "mcp", "local-first", "claude-code", "cowork"]
+}

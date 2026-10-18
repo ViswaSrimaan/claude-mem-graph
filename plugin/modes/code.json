@@ -1,0 +1,49 @@
+{
+  "id": "code",
+  "name": "Code",
+  "description": "Software development work in Claude Code",
+  "language": "English",
+  "types": [
+    { "id": "bugfix", "label": "Bug fix", "icon": "●", "description": "Something was broken and is now fixed" },
+    { "id": "feature", "label": "Feature", "icon": "◆", "description": "New capability added" },
+    { "id": "refactor", "label": "Refactor", "icon": "↻", "description": "Code restructured, behavior unchanged" },
+    { "id": "change", "label": "Change", "icon": "✓", "description": "Docs, config, dependency or other modification" },
+    { "id": "discovery", "label": "Discovery", "icon": "○", "description": "Learned how existing code or a system works" },
+    { "id": "decision", "label": "Decision", "icon": "⚖", "description": "Design or architecture choice, with the reason" },
+    { "id": "gotcha", "label": "Gotcha", "icon": "⚠", "description": "Trap, edge case or non-obvious constraint worth remembering" },
+    { "id": "preference", "label": "Preference", "icon": "♥", "description": "How the user likes things done" },
+    { "id": "security", "label": "Security", "icon": "⚷", "description": "Security-relevant finding" },
+    { "id": "note", "label": "Note", "icon": "✎", "description": "Manually saved memory" }
+  ],
+  "concepts": ["how-it-works", "why-it-exists", "what-changed", "problem-solution", "gotcha", "pattern", "trade-off", "next-step"],
+  "entities": [
+    { "id": "project", "description": "a product, repo or app" },
+    { "id": "component", "description": "module, service, function, endpoint" },
+    { "id": "file", "description": "a source or config file" },
+    { "id": "tool", "description": "library, framework, CLI, service" },
+    { "id": "bug", "description": "a defect or error" },
+    { "id": "decision", "description": "a design choice" },
+    { "id": "preference", "description": "how the user likes things done" },
+    { "id": "task", "description": "work to do" },
+    { "id": "person", "description": "someone involved" },
+    { "id": "topic", "description": "any other subject or concept" }
+  ],
+  "relations": [
+    { "id": "uses" },
+    { "id": "depends on" },
+    { "id": "part of" },
+    { "id": "calls" },
+    { "id": "fixes" },
+    { "id": "caused by" },
+    { "id": "affects" },
+    { "id": "replaced by" },
+    { "id": "decided" },
+    { "id": "blocks" },
+    { "id": "prefers", "single": true },
+    { "id": "owned by", "single": true },
+    { "id": "pinned to", "single": true },
+    { "id": "status", "single": true },
+    { "id": "related to" }
+  ],
+  "focus": "Record durable engineering knowledge: what the system now does differently, bugs and their root causes, decisions and their reasons, commands that build/test/run the project, and traps a future session would otherwise rediscover. Name concrete files, functions, commands and error messages."
+}

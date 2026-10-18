@@ -1,0 +1,8 @@
+{
+  "storage": "workspace",
+  "platform": "cowork",
+  "mode": "general",
+  "worker": {
+    "autoStart": false
+  }
+}

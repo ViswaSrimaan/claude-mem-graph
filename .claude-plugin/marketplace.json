@@ -1,0 +1,21 @@
+{
+  "name": "mem-local",
+  "owner": { "name": "claude-mem-local contributors" },
+  "metadata": {
+    "description": "Free and open-source local memory plugins for Claude Code and Claude Cowork"
+  },
+  "plugins": [
+    {
+      "name": "mem-local",
+      "version": "1.0.0",
+      "source": "./plugin",
+      "description": "Persistent local memory for Claude Code (one database in ~/.claude-mem-local for all projects)"
+    },
+    {
+      "name": "mem-local-cowork",
+      "version": "1.0.0",
+      "source": "./cowork",
+      "description": "Persistent local memory for Claude Cowork (memory is stored inside the folder you work in, so it survives between sessions)"
+    }
+  ]
+}

@@ -1,0 +1,8 @@
+node_modules/
+dist/
+.claude-mem-local/
+*.db
+*.db-wal
+*.db-shm
+*.log
+.DS_Store
