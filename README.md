@@ -23,7 +23,7 @@ Requirements: Node.js 18.17+ (22.5+ recommended for SQLite; older versions fall 
 ### Claude Code
 
 ```bash
-git clone <this repo> claude-mem-local
+git clone <this repo> claude-mem-graph
 cd claude-mem-local
 npm run install-plugin            # = node scripts/install.mjs
 ```
