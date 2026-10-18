@@ -1,6 +1,10 @@
-# claude-mem-graph
+<p align="center">
+  <img src="assets/logo.svg" alt="claude-mem-graph logo" width="128" height="128">
+</p>
 
-**Free, open-source, local-first persistent memory for Claude Code and Claude Cowork.**
+<h1 align="center">claude-mem-graph</h1>
+
+<p align="center"><strong>Free, open-source, local-first persistent memory for Claude Code and Claude Cowork.</strong></p>
 
 Claude forgets everything between sessions. claude-mem-graph watches what happens
 in a session (prompts, tool calls, results), compresses it into short searchable
@@ -13,6 +17,10 @@ same project, so Claude starts with context instead of rediscovering it.
 - **Pick your observer:** your existing Claude Code login, a free local model (Ollama / LM Studio), an Anthropic API key, or fully offline rules.
 
 > Inspired by [Claude-Mem](https://github.com/thedotmack/claude-mem) (Apache-2.0) and rebuilt from scratch for local-only use. See [NOTICE](NOTICE).
+
+<p align="center">
+  <img src="assets/how-it-works.png" alt="How claude-mem-graph works: hooks capture each Claude Code session (write path), one model call compresses each turn into observations, entities and facts in a local SQLite store, and hybrid recall injects the right context back into the next session (read path)." width="100%">
+</p>
 
 ---
 
