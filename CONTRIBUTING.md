@@ -97,36 +97,11 @@ Add a test that upgrades from the previous version.
 
 ## Commits and pull requests
 
-`main` is protected: nobody pushes to it directly, not even maintainers. Every
-change goes through a pull request, and the **CI** check (`npm test` plus a
-check that `cowork/` matches `plugin/`) must pass before it can be merged.
-Force pushes and deleting `main` are blocked.
-
 - Write commit messages in the imperative ("Add path tool", not "Added…"),
   with a short first line and a body that explains why.
 - Keep pull requests focused on one thing. Describe what changed, why, and how
   you tested it.
 - Make sure `npm test` passes and `cowork/` is rebuilt before asking for review.
-
-## Releasing (maintainers)
-
-1. In a pull request, bump the version to the same value in all four places:
-   `package.json`, `plugin/.claude-plugin/plugin.json`,
-   `.claude-plugin/marketplace.json` (both entries), then run `npm run build`
-   so `cowork/.claude-plugin/plugin.json` picks it up. Claude Code uses this
-   version to notice updates, so bump it for every release.
-2. Merge the pull request, then tag the merge commit and push the tag:
-
-   ```bash
-   git checkout main && git pull
-   git tag v1.1.0
-   git push origin v1.1.0
-   ```
-
-3. The **Release** workflow checks the tag matches every version field, runs
-   the tests, builds `mem-local.zip` and `mem-local-cowork.zip` and publishes a
-   GitHub release with them attached and generated notes. Edit the notes on
-   GitHub afterwards if you want to add highlights.
 
 ## Reporting bugs
 

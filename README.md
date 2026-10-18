@@ -72,17 +72,14 @@ Cowork's home directory doesn't persist between sessions, so the Cowork build
 folder you work in**, uses the knowledge-work vocabulary (deliverables, findings,
 decisions, preferences, open tasks) and doesn't start a background viewer.
 
-Download `mem-local-cowork.zip` from the
-[latest release](https://github.com/ViswaSrimaan/claude-mem-graph/releases/latest)
-and upload it in the Claude desktop app as a custom plugin, or add this
-repository as a plugin marketplace and install `mem-local-cowork`. To build the
-zip yourself from a clone:
-
 ```bash
 npm run package     # builds dist/mem-local-cowork.zip (and dist/mem-local.zip)
 ```
 
-If the folder you work in is a git repo, add `.claude-mem-local/` to its `.gitignore`.
+Then add it in the Claude desktop app, either by adding this repository as a
+plugin marketplace and installing `mem-local-cowork`, or by uploading
+`dist/mem-local-cowork.zip` as a custom plugin. If the folder is a git repo, add
+`.claude-mem-local/` to its `.gitignore`.
 
 In Cowork the Claude CLI may not be available to the observer; it then falls back to the offline observer automatically (see [Observers](#observers)).
 
