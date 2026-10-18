@@ -1,8 +1,8 @@
-# claude-mem-local
+# claude-mem-graph
 
 **Free, open-source, local-first persistent memory for Claude Code and Claude Cowork.**
 
-Claude forgets everything between sessions. claude-mem-local watches what happens
+Claude forgets everything between sessions. claude-mem-graph watches what happens
 in a session (prompts, tool calls, results), compresses it into short searchable
 *observations*, and brings the relevant ones back the next time you work on the
 same project, so Claude starts with context instead of rediscovering it.
@@ -23,17 +23,19 @@ Requirements: Node.js 18.17+ (22.5+ recommended for SQLite; older versions fall 
 ### Claude Code
 
 ```bash
-git clone <this repo> claude-mem-graph
-cd claude-mem-local
+git clone https://github.com/ViswaSrimaan/claude-mem-graph.git
+cd claude-mem-graph
 npm run install-plugin            # = node scripts/install.mjs
 ```
 
 Or inside Claude Code:
 
 ```
-/plugin marketplace add /path/to/claude-mem-local
+/plugin marketplace add ViswaSrimaan/claude-mem-graph
 /plugin install mem-local@mem-local
 ```
+
+(or `/plugin marketplace add /path/to/claude-mem-graph` for a local clone)
 
 Restart Claude Code. Memory starts recording in the next session.
 
@@ -284,7 +286,7 @@ Key settings (all defaults in `plugin/lib/config.mjs`):
 ## Development
 
 ```bash
-npm test            # 82 tests: both storage backends, graph layer, name matching, upgrade, privacy, observer (with a mock LLM), hooks, MCP, viewer API
+npm test            # 83 tests: both storage backends, graph layer, name matching, upgrade, privacy, observer (with a mock LLM), hooks, MCP, viewer API
 npm run build       # regenerate cowork/ from plugin/
 npm run package     # zips in dist/
 npm run validate    # claude plugin validate on marketplace + both plugins
